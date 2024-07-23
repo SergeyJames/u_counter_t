@@ -29,28 +29,24 @@ struct u_counter_t final {
 	}
 
 	u_counter_t& operator++() {
-		(n < std::numeric_limits<T>::max()) ?
-			++n : throw std::overflow_error{"Integer type overflow"};
-		
+		(n < _max) ? ++n : throw std::overflow_error{"Integer type overflow"};
 		return *this;
 	}
 
 	u_counter_t& operator--() {
-		(n > 0) ? --n : throw std::overflow_error{"Integer type overflow"};
+		(n > _min) ? --n : throw std::overflow_error{"Integer type overflow"};
 		return *this;
 	}
 
 	u_counter_t operator--(int) {
 		u_counter_t tmp = *this;
-		(this->n > 0) ? this->operator--() : throw std::overflow_error{"Integer type overflow"};
+		(this->n > _min) ? this->operator--() : throw std::overflow_error{"Integer type overflow"};
 		return tmp;
 	}
 
 	u_counter_t operator++(int) {
 		u_counter_t tmp = this->n;
-		(this->n < std::numeric_limits<T>::max()) ?
-			this->operator++() : throw std::overflow_error{"Integer type overflow"};
-
+		(this->n < _max) ? this->operator++() : throw std::overflow_error{"Integer type overflow"};
 		return tmp;
 	}
 
@@ -65,6 +61,9 @@ struct u_counter_t final {
 	T get() const noexcept { return n; }
 private:
 	T n{};
+
+	const T _min{std::numeric_limits<T>::min()};
+	const T _max{std::numeric_limits<T>::max()};
 };
 
 template<class T>
@@ -74,40 +73,65 @@ std::ostream& operator<<(std::ostream& stream, const u_counter_t<T>& counter) {
 }
 
 template<class T>
-void basicTestCase() {
-	constexpr T almostMax = std::numeric_limits<T>::max() - 3;
-	constexpr T max = std::numeric_limits<T>::max();
+void basicValuesTestCase() {
+	if (std::is_unsigned<T>()) {
+		constexpr T almostMin = std::numeric_limits<T>::min() + 3;
+		constexpr T min = std::numeric_limits<T>::min();
 
-	std::cout << typeid(almostMax).name() << std::endl;
+		u_counter_t i = almostMin;
+		try {
+			for (;; i--) {
+				std::cout << i << std::endl;
+			}
+		}
+		catch(const std::exception& e) {
+			assert(i == min);
+			std::cerr << e.what() << '\n';
+		}
 
-	u_counter_t i = almostMax;
-	try {
-		for (;; i++) {
-			std::cout << i << std::endl;
+		i = std::numeric_limits<T>::max() - 3;
+		try {
+			for (;; i++) {
+				std::cout << i << std::endl;
+			}
+		}
+		catch(const std::exception& e) {
+			assert(i == std::numeric_limits<T>::max());
+			std::cerr << e.what() << '\n';
 		}
 	}
-	catch(const std::exception& e) {
-		assert(i == max);
-		std::cerr << e.what() << '\n';
-	}
+	else {
+		constexpr T almostMax = std::numeric_limits<T>::max() - 3;
+		constexpr T max = std::numeric_limits<T>::max();
 
-	i = 3;
-	try {
-		for (;; i--) {
-			std::cout << i << std::endl;
+		u_counter_t i = almostMax;
+		try {
+			for (;; i++) {
+				std::cout << i << std::endl;
+			}
 		}
-	}
-	catch(const std::exception& e) {
-		assert(i == 0);
-		std::cerr << e.what() << '\n';
+		catch(const std::exception& e) {
+			assert(i == max);
+			std::cerr << e.what() << '\n';
+		}
+
+		i = std::numeric_limits<T>::min() + 3;
+		try {
+			for (;; i--) {
+				std::cout << i << std::endl;
+			}
+		}
+		catch(const std::exception& e) {
+			assert(i == std::numeric_limits<T>::min());
+			std::cerr << e.what() << '\n';
+		}
 	}
 }
 
-
 int main() {
-	basicTestCase<short>();
-	basicTestCase<int>();
-	basicTestCase<unsigned>();
-	basicTestCase<size_t>();
+	basicValuesTestCase<short>();
+	basicValuesTestCase<int>();
+	basicValuesTestCase<unsigned>();
+	basicValuesTestCase<size_t>();
 	return 0;
 }
