@@ -1,8 +1,10 @@
 #include <assert.h>
 #include <exception>
 #include <iostream>
-#include <limits> 
+#include <limits>
+#include <limits.h>
 
+#include <stdbool.h>
 
 template<class T>
 struct u_counter_t final {
@@ -34,13 +36,13 @@ struct u_counter_t final {
 	}
 
 	u_counter_t& operator--() {
-		(n > _min) ? --n : throw std::overflow_error{"Integer type overflow"};
+		(n > _min) ? --n : throw std::underflow_error{"Integer type underflow"};
 		return *this;
 	}
 
 	u_counter_t operator--(int) {
 		u_counter_t tmp = *this;
-		(this->n > _min) ? this->operator--() : throw std::overflow_error{"Integer type overflow"};
+		(this->n > _min) ? this->operator--() : throw std::underflow_error{"Integer type underflow"};
 		return tmp;
 	}
 
@@ -56,6 +58,18 @@ struct u_counter_t final {
 
 	bool operator==(T other) const noexcept {
 		return n == other;
+	}
+
+	u_counter_t& operator+=(const u_counter_t& other) {
+		T res{};
+		const bool isOverFlow = __builtin_add_overflow(this->n, other.n, &res);
+
+		if (isOverFlow) {
+			throw std::overflow_error{"Integer type overflow"};
+		}
+
+		this->n = res;
+		return *this;
 	}
 
 	T get() const noexcept { return n; }
@@ -133,5 +147,16 @@ int main() {
 	basicValuesTestCase<int>();
 	basicValuesTestCase<unsigned>();
 	basicValuesTestCase<size_t>();
+
+	u_counter_t<unsigned short> counter = USHRT_MAX - 1;
+	try {
+		while(1) {
+			counter += 2; // This throws an overflow exception. The loop is no longer infinite.
+		}
+	} catch (const std::overflow_error& e) {
+		assert(counter == USHRT_MAX - 1);
+		std::cerr << "Overflow error: " << e.what() << std::endl;
+	}
+
 	return 0;
 }
