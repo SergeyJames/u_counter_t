@@ -62,10 +62,18 @@ struct u_counter_t final {
 
 	u_counter_t& operator+=(const u_counter_t& other) {
 		T res{};
-		const bool isOverFlow = __builtin_add_overflow(this->n, other.n, &res);
-
-		if (isOverFlow) {
+		if (__builtin_add_overflow(this->n, other.n, &res)) {
 			throw std::overflow_error{"Integer type overflow"};
+		}
+
+		this->n = res;
+		return *this;
+	}
+
+	u_counter_t& operator-=(const u_counter_t& other) {
+		T res{};
+		if (__builtin_sub_overflow(this->n, other.n, &res)) {
+			throw std::overflow_error{"Integer type underflow"};
 		}
 
 		this->n = res;
@@ -148,13 +156,24 @@ int main() {
 	basicValuesTestCase<unsigned>();
 	basicValuesTestCase<size_t>();
 
-	u_counter_t<unsigned short> counter = USHRT_MAX - 1;
+	u_counter_t<uint64_t> testMax = std::numeric_limits<uint64_t>::max() - 1;
 	try {
 		while(1) {
-			counter += 2; // This throws an overflow exception. The loop is no longer infinite.
+			testMax += 2; // This throws an overflow exception. The loop is no longer infinite.
 		}
 	} catch (const std::overflow_error& e) {
-		assert(counter == USHRT_MAX - 1);
+		assert(testMax == std::numeric_limits<uint64_t>::max() - 1);
+		std::cerr << "Overflow error: " << e.what() << std::endl;
+	}
+
+
+	u_counter_t<int64_t> testMin = std::numeric_limits<int64_t>::min() + 1;
+	try {
+		while(1) {
+			testMin -= 2; // This throws an underflow exception. The loop is no longer infinite.
+		}
+	} catch (const std::overflow_error& e) {
+		assert(testMin == std::numeric_limits<int64_t>::min() + 1);
 		std::cerr << "Overflow error: " << e.what() << std::endl;
 	}
 

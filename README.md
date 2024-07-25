@@ -1,4 +1,4 @@
-# u_counter_t: Avoiding integer type overflows/underflows in C++
+# u_counter_t | Avoiding integer type overflows/underflows in C++
 
 ## Overview
 
